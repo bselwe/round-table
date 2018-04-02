@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace RoundTable
 {
@@ -9,6 +10,9 @@ namespace RoundTable
         private static void Main(string[] args)
         {
             HandleArguments(args);
+
+            var rostrum = InitializeRostrum();
+            InitializeKnights(rostrum);
         }
 
         private static void HandleArguments(string[] args)
@@ -20,6 +24,20 @@ namespace RoundTable
                 
                 if (!Int32.TryParse(args[0], out numberOfKnights))
                     throw new ArgumentException("All arguments must be integers. Arguments: n, n - knights.");
+            }
+        }
+
+        private static Rostrum InitializeRostrum()
+        {
+            return new Rostrum(numberOfKnights);
+        }
+
+        private static void InitializeKnights(Rostrum rostrum)
+        {
+            for (int i = 0; i < numberOfKnights; i++)
+            {
+                var knight = new Knight(i, rostrum);
+                new Thread(() => knight.Run()).Start();
             }
         }
     }
