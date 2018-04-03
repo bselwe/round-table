@@ -5,38 +5,28 @@ namespace RoundTable
 {
     class Program
     {
-        private static int numberOfKnights = Configuration.DefaultNumberOfKnights;
-
         private static void Main(string[] args)
         {
-            HandleArguments(args);
-
             var rostrum = InitializeRostrum();
-            InitializeKnights(rostrum);
-        }
-
-        private static void HandleArguments(string[] args)
-        {
-            if (args.Length > 0)
-            {
-                if (args.Length != 1)
-                    throw new ArgumentException("Invalid number of arguments. Arguments: n, n - knights.");
-                
-                if (!Int32.TryParse(args[0], out numberOfKnights))
-                    throw new ArgumentException("All arguments must be integers. Arguments: n, n - knights.");
-            }
+            var bar = InitializeSleazyBar();
+            InitializeKnights(rostrum, bar);
         }
 
         private static Rostrum InitializeRostrum()
         {
-            return new Rostrum(numberOfKnights);
+            return new Rostrum(Configuration.NumberOfKnights);
         }
 
-        private static void InitializeKnights(Rostrum rostrum)
+        private static SleazyBar InitializeSleazyBar()
         {
-            for (int i = 0; i < numberOfKnights; i++)
+            return new SleazyBar(Configuration.NumberOfKnights, Configuration.WineCapacity, Configuration.PlateCapacity);
+        }
+
+        private static void InitializeKnights(Rostrum rostrum, SleazyBar bar)
+        {
+            for (int i = 0; i < Configuration.NumberOfKnights; i++)
             {
-                var knight = new Knight(i, rostrum);
+                var knight = new Knight(i, rostrum, bar);
                 new Thread(() => knight.Run()).Start();
             }
         }

@@ -6,26 +6,25 @@ namespace RoundTable
 {
     public class Rostrum
     {
-        private object queueLock = new object();
+        private readonly object queueLock = new object();
+        private readonly int knights; // Number of knights (including the king) - always even
+        private readonly int king = 0; // For simplicity, let's assume that the king is always 0 - indexed
 
         private RostrumState[] states;
         private bool[] waiting, listening;
         private ConditionVariable[] qWaiting, qListening;
 
-        public int Knights { get; private set; } // Number of knights (including the king)
-        public int King { get; private set; } = 0; // For simplicity, let's assume that the king is always 0 - indexed
-
         public Rostrum(int knights)
         {
-            Knights = knights;
+            this.knights = knights;
 
-            states = new RostrumState[Knights];
-            waiting = new bool[Knights];
-            listening = new bool[Knights];
-            qWaiting = new ConditionVariable[Knights];
-            qListening = new ConditionVariable[Knights];
+            states = new RostrumState[knights];
+            waiting = new bool[knights];
+            listening = new bool[knights];
+            qWaiting = new ConditionVariable[knights];
+            qListening = new ConditionVariable[knights];
 
-            for (int k = 0; k < Knights; k++)
+            for (int k = 0; k < knights; k++)
             {
                 states[k] = RostrumState.NotTalking;
                 qWaiting[k] = new ConditionVariable();
@@ -33,40 +32,40 @@ namespace RoundTable
             }
         }
 
-        public void TryToTalk(int i)
+        public void TryToTalk(int knight)
         {
             lock (queueLock)
             {
                 // Wait if the king is currently talking
-                while (!IsKing(i) && states[i] == RostrumState.Listening)
-                    Listen(i);
+                while (!IsKing(knight) && states[knight] == RostrumState.Listening)
+                    Listen(knight);
 
                 // Wait if any neighbor is talking
-                while (GetNeighbors(i).Any(n => states[n] == RostrumState.Talking))
-                    Wait(i);
+                while (GetNeighbors(knight).Any(n => states[n] == RostrumState.Talking))
+                    Wait(knight);
 
-                states[i] = RostrumState.Talking;
-                Console.WriteLine($"[{i}] Talking");
+                states[knight] = RostrumState.Talking;
+                Console.WriteLine($"[{knight}] Talking");
 
                 // The king has started talking, set knights's state to listening
-                if (IsKing(i))
+                if (IsKing(knight))
                     states = states.Select(s => s != RostrumState.Talking ? RostrumState.Listening : s).ToArray();
             }
         }
 
-        public void StopTalking(int i)
+        public void StopTalking(int knight)
         {
             lock (queueLock)
             {
-                states[i] = RostrumState.NotTalking;
-                Console.WriteLine($"[{i}] Stopped talking");
+                states[knight] = RostrumState.NotTalking;
+                Console.WriteLine($"[{knight}] Stopped talking");
 
-                if (IsKing(i))
+                if (IsKing(knight))
                 {
                     // The king has stopped talking
                     // Try to wake up all listening & waiting knights
 
-                    for (int k = 0; k < Knights; k++)
+                    for (int k = 0; k < knights; k++)
                     {
                         if (!IsKing(k) && states[k] == RostrumState.Listening)
                         {
@@ -82,63 +81,61 @@ namespace RoundTable
                     // Try to wake up his waiting neighbors
                     
                     // Ignore when the king is talking
-                    if (states[King] == RostrumState.Talking)
+                    if (states[king] == RostrumState.Talking)
                     {
-                        states[i] = RostrumState.Listening;
+                        states[knight] = RostrumState.Listening;
                         return;
                     }
 
-                    foreach (var k in GetNeighbors(i))
+                    foreach (var k in GetNeighbors(knight))
                         TryToWakeUpWaiting(k);
                 }
             }
         }
 
-        private void Listen(int i)
+         private void Listen(int k)
         {
-            listening[i] = true;
-            Console.WriteLine($"[{i}] Listening to the king");
-            qListening[i].Wait(queueLock);
-            listening[i] = false;
+            listening[k] = true;
+            Console.WriteLine($"[{k}] Listening to the king");
+            qListening[k].Wait(queueLock);
+            listening[k] = false;
         }
 
-        private void Wait(int i)
+        private void Wait(int k)
         {
-            waiting[i] = true;
-            Console.WriteLine($"[{i}] Waiting for neighbors to start talking");
-            qWaiting[i].Wait(queueLock);
-            waiting[i] = false;
+            waiting[k] = true;
+            Console.WriteLine($"[{k}] Waiting for neighbors to start talking");
+            qWaiting[k].Wait(queueLock);
+            waiting[k] = false;
         }
 
-        private void TryToWakeUpListening(int i)
+        private void TryToWakeUpListening(int k)
         {
-            if (listening[i])
+            if (listening[k])
             {
-                qListening[i].Pulse();
-                Console.WriteLine($"[{i}] Waking up from listening ...");
+                qListening[k].Pulse();
+                Console.WriteLine($"[{k}] Waking up from listening ...");
             }
         }
 
-        private bool TryToWakeUpWaiting(int i)
+        private void TryToWakeUpWaiting(int k)
         {
-            if (waiting[i] && AreNotTalking(GetNeighbors(i)))
+            if (waiting[k] && AreNotTalking(GetNeighbors(k)))
             {
-                qWaiting[i].Pulse();
-                Console.WriteLine($"[{i}] Waking up from waiting ...");
-                return true;
+                qWaiting[k].Pulse();
+                Console.WriteLine($"[{k}] Waking up from waiting ...");
             }
-            return false;
         }
 
-        private IEnumerable<int> GetNeighbors(int i)
+        private IEnumerable<int> GetNeighbors(int k)
         {   
-            if (i > 0)
-                yield return i - 1;
-            if (i == 0)
-                yield return Knights - 1;
-            if (i < Knights - 1)
-                yield return i + 1;
-            if (i == Knights - 1)
+            if (k > 0)
+                yield return k - 1;
+            if (k == 0)
+                yield return knights - 1;
+            if (k < knights - 1)
+                yield return k + 1;
+            if (k == knights - 1)
                 yield return 0;
         }
 
@@ -147,9 +144,9 @@ namespace RoundTable
             return knights.All(k => states[k] != RostrumState.Talking);
         }
 
-        private bool IsKing(int i)
+        private bool IsKing(int k)
         {
-            return i == King;
+            return k == king;
         }
 
         public enum RostrumState

@@ -6,13 +6,15 @@ namespace RoundTable
     public class Knight
     {
         private readonly Rostrum rostrum;
+        private readonly SleazyBar bar;
         private readonly Random random;
 
         private readonly int id;
 
-        public Knight(int id, Rostrum rostrum)
+        public Knight(int id, Rostrum rostrum, SleazyBar bar)
         {
             this.rostrum = rostrum;
+            this.bar = bar;
             this.random = new Random(Guid.NewGuid().GetHashCode());
             this.id = id;
         }
@@ -25,19 +27,25 @@ namespace RoundTable
                 var activityTime = GetActivityTime();
 
                 if (activity == KnightActivity.Talking)
+                {
                     rostrum.TryToTalk(id);
-
-                Thread.Sleep(activityTime);
-
-                if (activity == KnightActivity.Talking)
+                    Thread.Sleep(activityTime);
                     rostrum.StopTalking(id);
+                }
+                else if (activity == KnightActivity.Drinking)
+                {
+                    bar.TryToDrink(id);
+                    Thread.Sleep(activityTime);
+                    bar.StopDrinking(id);
+                }
             }
         }
 
         private KnightActivity GetRandomActivity()
         {
-            var activites = Enum.GetValues(typeof(KnightActivity));
-            return (KnightActivity) activites.GetValue(random.Next(activites.Length));
+            return KnightActivity.Drinking;
+            // var activites = Enum.GetValues(typeof(KnightActivity));
+            // return (KnightActivity) activites.GetValue(random.Next(activites.Length));
         }
 
         private int GetActivityTime()
@@ -48,7 +56,8 @@ namespace RoundTable
         public enum KnightActivity
         {
             Sleeping,
-            Talking
+            Talking,
+            Drinking
         }
     }
 }
