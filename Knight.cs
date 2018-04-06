@@ -43,9 +43,8 @@ namespace RoundTable
 
         private KnightActivity GetRandomActivity()
         {
-            return KnightActivity.Drinking;
-            // var activites = Enum.GetValues(typeof(KnightActivity));
-            // return (KnightActivity) activites.GetValue(random.Next(activites.Length));
+            var activites = Enum.GetValues(typeof(KnightActivity));
+            return (KnightActivity) activites.GetValue(random.Next(activites.Length));
         }
 
         private int GetActivityTime()

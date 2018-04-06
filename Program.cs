@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using static RoundTable.SleazyBar;
 
 namespace RoundTable
 {
@@ -10,6 +11,7 @@ namespace RoundTable
             var rostrum = InitializeRostrum();
             var bar = InitializeSleazyBar();
             InitializeKnights(rostrum, bar);
+            InitializeWaiters(bar);
         }
 
         private static Rostrum InitializeRostrum()
@@ -29,6 +31,15 @@ namespace RoundTable
                 var knight = new Knight(i, rostrum, bar);
                 new Thread(() => knight.Run()).Start();
             }
+        }
+
+        private static void InitializeWaiters(SleazyBar bar)
+        {
+            var wineWaiter = new Waiter(ResourceType.Wine, bar);
+            var cucumbersWaiter = new Waiter(ResourceType.Cucumbers, bar);
+
+            new Thread(() => wineWaiter.Run()).Start();
+            new Thread(() => cucumbersWaiter.Run()).Start();
         }
     }
 }

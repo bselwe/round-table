@@ -8,8 +8,8 @@ namespace RoundTable
     {
         private readonly object queueLock = new object();
         private readonly int knights; // Number of knights (including the king) - always even
-        private readonly int wineCapacity; // A bottle can hold w units (cups) of wine
-        private readonly int plateCapacity; // The plate has space for up to c cucumbers
+        private readonly int wineCapacity; // The bottle can hold w units (cups) of wine
+        private readonly int plateCapacity; // A plate has space for up to c cucumbers
 
         private Resource[] resources; // Wine and cucumbers
         private bool[] dishes; // Indicates whether plates or cups are taken
@@ -52,8 +52,6 @@ namespace RoundTable
                 while (!AreResourcesAvailable(knight))
                     Wait(knight);
 
-                // The knight is drinking
-                Console.WriteLine($"[{knight}] Drinking");
                 Drink(knight);
             }
         }
@@ -84,6 +82,7 @@ namespace RoundTable
                 }
 
                 DistributeResources();
+                Console.WriteLine($"{type} ADDED!");
             }
         }
 
@@ -97,6 +96,8 @@ namespace RoundTable
 
         private void Drink(int k)
         {
+            Console.WriteLine($"[{k}] Drinking");
+
             // Occupy dishes
             SetDishesAvailability(k, false);
 
